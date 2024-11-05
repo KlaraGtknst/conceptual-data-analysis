@@ -3,6 +3,7 @@
             [clojure.string :as str]
             ))
 
+;; task 1
 (defn replace-empty-str-w-nil
   [card]                                                    ; card is a map
   (into {} (for [[k v] card]
@@ -25,5 +26,15 @@
   (println (csv-to-map file-path)))
 
 ;; whole deck as dict
-(println ((get-deck-as-dict "resources/week1/card_games.csv") "Best Act"))
-(println (get-deck-as-dict "resources/week1/card_games.csv"))
+;(println ((get-deck-as-dict "resources/week1/card_games.csv") "Best Act"))
+;(println (get-deck-as-dict "resources/week1/card_games.csv"))
+
+
+;; task 2
+(defn compare-cards
+  [cardA cardB]
+  (every? identity (map #(<= %1 %2) (vals cardA) (vals cardB)))) ; TODO: csv values from str to int & handel date
+
+(println (compare-cards {:a 1 :b 2} {:a 1 :b 2}))           ; true
+(println (compare-cards {:a 1 :b 2} {:a 1 :b 3}))           ; true
+(println (compare-cards {:a 1 :b 3} {:a 1 :b 2}))           ; false
