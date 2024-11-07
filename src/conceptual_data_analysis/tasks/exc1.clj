@@ -10,29 +10,29 @@
   Returns a vector of key-value pairs/ vectors."
   [card]
   (into {} (for [[k v] card]
-    (if (str/blank? v)                                      ; check if value is empty string
-      [k nil]                                               ; replace empty string value with nil
-      [k v]                                                 ; value != empty string
-      ))))
+             (if (str/blank? v)                             ; check if value is empty string
+               [k nil]                                      ; replace empty string value with nil
+               [k v]                                        ; value != empty string
+               ))))
 
 
 (defn get-deck-as-dict
   "Receives a file path and returns a hash-map of the cards in the file."
   [^String file-path]
-  (let [cards (csv-files/csv-to-map file-path)                        ; get cards as vector of hash-maps
+  (let [cards (csv-files/csv-to-map file-path)              ; get cards as vector of hash-maps
         nil-cards (mapv replace-empty-str-w-nil cards)]     ; replace empty strings values with nil
     (reduce #(assoc %1 (:game-name %2) %2) {} nil-cards))   ; reduce: first input is empty hash-map,
-                                                            ;         second input (nil-cards) is a vector of hash-maps
-                                                            ;         first result is combined with second result
-                                                            ; assoc: add key-value pair to hash-map
-                                                            ; game-name is the key in the hash-map
-                                                            ; %1 is resulting hash-map, %2 is a hash-map from the vector
+  ;         second input (nil-cards) is a vector of hash-maps
+  ;         first result is combined with second result
+  ; assoc: add key-value pair to hash-map
+  ; game-name is the key in the hash-map
+  ; %1 is resulting hash-map, %2 is a hash-map from the vector
   )
 
 ;; example
 ;; cards as dict
 #_(let [file-path "resources/week1/card_games.csv"]
-  (println (csv-to-map file-path)))
+    (println (csv-to-map file-path)))
 
 ;; whole deck as dict
 ;(println ((get-deck-as-dict "resources/week1/card_games.csv") "Best Act"))
@@ -47,38 +47,38 @@
   [card]
   (let [new-card (-> card
                      (cond-> (:inception card)
-                       (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4)))))
+                             (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4)))))
                      (cond-> (:publication-date card)
-                       (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
+                             (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
     new-card))
 
 
 (defmulti compare-no-nil
-    "Called if values are not nil.
-    Dispatches on the key.
-    Compares the values wrt. the compare-by value if key is not :game-name (lexicographic comparison)."
-   (fn [key compare-by valA valB]
-    key))  ;; Dispatch on the key itself
+          "Called if values are not nil.
+          Dispatches on the key.
+          Compares the values wrt. the compare-by value if key is not :game-name (lexicographic comparison)."
+          (fn [key compare-by valA valB]
+            key))                                           ;; Dispatch on the key itself
 
-  ;; Called if key is not :game-name.
-  ;; Compares the values wrt. the compare-by value.
-  ;; Since the values are strings, they are converted to integers before comparison.
+;; Called if key is not :game-name.
+;; Compares the values wrt. the compare-by value.
+;; Since the values are strings, they are converted to integers before comparison.
 (defmethod compare-no-nil
   :default                                                  ; everything that can be converted to integer
   [_ compare-by valA valB]
-    (compare-by (Integer/parseInt valA) (Integer/parseInt valB))) ; compare-by is a function chosen by the user
+  (compare-by (Integer/parseInt valA) (Integer/parseInt valB))) ; compare-by is a function chosen by the user
 
-  ;; Called if key is :game-name.
-  ;; Compares the values of the cards lexicographically.
-  ;; returns <0 if valA < valB, 0 if valA = valB, >0 if valA > valB in terms of length disregarding the content:
-  ;; https://clojuredocs.org/clojure.core/compare (07.11.2024)
-  (defmethod compare-no-nil
-    :game-name                                     ; Lexicographic comparison
-    [_ _ valA valB]
-    (= 0 (compare valA valB)))
+;; Called if key is :game-name.
+;; Compares the values of the cards lexicographically.
+;; returns <0 if valA < valB, 0 if valA = valB, >0 if valA > valB in terms of length disregarding the content:
+;; https://clojuredocs.org/clojure.core/compare (07.11.2024)
+(defmethod compare-no-nil
+  :game-name                                                ; Lexicographic comparison
+  [_ _ valA valB]
+  (= 0 (compare valA valB)))
 
-  (defn compare-nil
-    " Compares two values. If one of the values is nil, the result is true. "
+(defn compare-nil
+  " Compares two values. If one of the values is nil, the result is true. "
   [compare-by valA valB key]
   (if (some true? [(nil? valA) (nil? valB)])
     true                                                    ; if one of the values is nil, return true
@@ -91,8 +91,8 @@
   (let [new-cardA (vals (handle-date cardA))                ; handle-date: year == last 4 characters
         new-cardB (vals (handle-date cardB))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
     (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
-           (compare-nil comp-fn (get new-cardA key) (get new-cardB key) key)) ; compare-nil: compare values of the cards
-         compare-by))))
+                            (compare-nil comp-fn (get new-cardA key) (get new-cardB key) key)) ; compare-nil: compare values of the cards
+                          compare-by))))
 
 (defn get-order-relation
   "Returns the order relation of the cards defined by their keys (game-name).
@@ -128,7 +128,7 @@
 ;(println (compare-cards {:a 1 :b 3} {:a 1 :b 2}))           ; false
 ;(println (compare-cards {:a 1 :b " hello " :c " 2016 "} {:a 1 :b " hell " :c " 2017 "})) ; false
 #_(let [s (:inception {:a 1 :b " hello " :c " 2016 " :inception " 08.2017 " (keyword " publication date ") " 02.03.2019 "})]
-(println (Integer/parseInt (subs s (- (count s) 4)))))
+    (println (Integer/parseInt (subs s (- (count s) 4)))))
 
 ;; test handle-date
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date "05.08.1993"}}))))
@@ -137,36 +137,44 @@
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception nil :publication-date nil}}))))
 
 #_(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
-      cardA (first deck)
-      cardB (second deck)
-      compare-by {:game-name        <=
-                  :publication-date <=
-                  :min-num-players  <=
-                  :max-num-players <=
-                  :min-age          <=
-                  :inception                   <=}
-      order (get-order-relation compare-by deck)]
-  ;(println cardA)
-  ;(println cardB)
-  ;(println compare-by)
-  ;(println (compare-cards cardA cardB compare-by))
-  ;(write-map-to-file order "resources/week1/order.edn")
-  ;(write-map-to-file deck "resources/week1/deck.edn")
-  ;(println order)
-  ;(println (read-map-from-file "resources/week1/order.edn"))
-  ;(println (read-map-from-file "resources/week1/deck.edn"))
-  )
+        cardA (first deck)
+        cardB (second deck)
+        compare-by {:game-name        <=
+                    :publication-date <=
+                    :min-num-players  <=
+                    :max-num-players  <=
+                    :min-age          <=
+                    :inception        <=}
+        order (get-order-relation compare-by deck)]
+    ;(println cardA)
+    ;(println cardB)
+    ;(println compare-by)
+    ;(println (compare-cards cardA cardB compare-by))
+    ;(write-map-to-file order "resources/week1/order.edn")
+    ;(write-map-to-file deck "resources/week1/deck.edn")
+    ;(println order)
+    ;(println (read-map-from-file "resources/week1/order.edn"))
+    ;(println (read-map-from-file "resources/week1/deck.edn"))
+    )
 
 ;; task 3
 
+; TODO: Implement the function
 
+
+
+
+
+
+
+;; task 4
 (defn reflexive?
   "Receives a base set and a relation.
   Returns true if the relation is reflexive."
   [base-set relation]
   (let [n (count base-set)
         reflexive (every? (fn [i] (= 1 (get-in relation [i i])))
-            (range n))]
+                          (range n))]
     reflexive))
 
 (defn anti-transitive? [base-set matrix]
@@ -176,16 +184,14 @@
               (every? (fn [j]
                         (every? (fn [k]
                                   (if (and (= 1 (get-in matrix [i j]))
-                                           (= 1 (get-in matrix [j k])) )
+                                           (= 1 (get-in matrix [j k])))
                                     (not= 1 (get-in matrix [k i]))) ; Checking for anti-transitivity
-                                  true) ; Proceed even if the condition doesn't apply
+                                  true)                     ; Proceed even if the condition doesn't apply
                                 (range n))
-                      )(range n))
-            )(range n))))
+                        ) (range n))
+              ) (range n))))
 
 
-
-;; task 4
 (defn order-relation?
   "Receives a base set and a relation.
   Returns true if the relation is an order relation."
@@ -212,19 +218,21 @@
 
 
 
-(def matrix [[1 0 1]
+#_(def matrix [[1 0 1]
              [0 1 0]
              [0 0 1]])
 
 (def base-set [1 2 3])
 
-(println "reflexive (true): " (reflexive? base-set matrix)) ;; => true
+;(println "reflexive (true): " (reflexive? base-set matrix)) ;; => true
 
-(def non-reflexive-matrix [[0 0 0]
+
+
+#_(def non-reflexive-matrix [[0 0 0]
                            [0 1 0]
                            [0 0 1]])
 
-(println "reflexive (false): " (reflexive? base-set non-reflexive-matrix)) ;; => false
+;(println "reflexive (false): " (reflexive? base-set non-reflexive-matrix)) ;; => false
 
 
 (def matrix [[0 1 0]
