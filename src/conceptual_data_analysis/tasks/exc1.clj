@@ -136,7 +136,7 @@
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date nil}}))))
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception nil :publication-date nil}}))))
 
-(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
+#_(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
       cardA (first deck)
       cardB (second deck)
       compare-by {:game-name        <=
@@ -156,3 +156,85 @@
   ;(println (read-map-from-file "resources/week1/order.edn"))
   ;(println (read-map-from-file "resources/week1/deck.edn"))
   )
+
+;; task 3
+
+
+(defn reflexive?
+  "Receives a base set and a relation.
+  Returns true if the relation is reflexive."
+  [base-set relation]
+  (let [n (count base-set)
+        reflexive (every? (fn [i] (= 1 (get-in relation [i i])))
+            (range n))]
+    reflexive))
+
+(defn anti-transitive? [base-set matrix]
+  ; FIXME: This is not correct
+  (let [n (count base-set)]
+    (every? (fn [i]
+              (every? (fn [j]
+                        (every? (fn [k]
+                                  (if (and (= 1 (get-in matrix [i j]))
+                                           (= 1 (get-in matrix [j k])) )
+                                    (not= 1 (get-in matrix [k i]))) ; Checking for anti-transitivity
+                                  true) ; Proceed even if the condition doesn't apply
+                                (range n))
+                      )(range n))
+            )(range n))))
+
+
+
+;; task 4
+(defn order-relation?
+  "Receives a base set and a relation.
+  Returns true if the relation is an order relation."
+  [base-set relation]
+
+  (let [; reflexivity: use matrix: O(n)
+        ; TODO: cast relation to matrix
+        reflexive (reflexive? base-set relation)
+
+        ;; antisymmetry: use matrix: O(n^2) ?
+        anti-transitive (anti-transitive? base-set relation)
+
+
+        ;; transitivity
+
+        ]
+    (println "reflexive? " reflexive)
+    (println "anti-transitive? " anti-transitive))
+  )
+
+
+
+
+
+
+
+(def matrix [[1 0 1]
+             [0 1 0]
+             [0 0 1]])
+
+(def base-set [1 2 3])
+
+(println "reflexive (true): " (reflexive? base-set matrix)) ;; => true
+
+(def non-reflexive-matrix [[0 0 0]
+                           [0 1 0]
+                           [0 0 1]])
+
+(println "reflexive (false): " (reflexive? base-set non-reflexive-matrix)) ;; => false
+
+
+(def matrix [[0 1 0]
+             [0 0 1]
+             [0 0 0]])
+
+(println "anti-symmetric (true): " (anti-transitive? base-set matrix)) ;; => true
+
+(def non-anti-transitive-matrix [[0 1 1]
+                                 [0 0 1]
+                                 [1 0 0]])
+
+(println "anti-symmetric (false): " (anti-transitive? base-set non-anti-transitive-matrix)) ;; => false
