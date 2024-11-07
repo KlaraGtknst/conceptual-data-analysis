@@ -1,5 +1,5 @@
 (ns conceptual-data-analysis.tasks.exc1
-  (:require [conceptual-data-analysis.io.csv-files :refer :all]
+  (:require [conceptual-data-analysis.io.csv-files :as csv-files]
             [clojure.string :as str]
             ))
 
@@ -18,7 +18,7 @@
 (defn get-deck-as-dict
   "Receives a file path and returns a hash-map of the cards in the file."
   [^String file-path]
-  (let [cards (csv-to-map file-path)                        ; get cards as vector of hash-maps
+  (let [cards (csv-files/csv-to-map file-path)                        ; get cards as vector of hash-maps
         nil-cards (mapv replace-empty-str-w-nil cards)]     ; replace empty strings values with nil
     (reduce #(assoc %1 (:game-name %2) %2) {} nil-cards))   ; reduce: first input is empty hash-map,
                                                             ;         second input (nil-cards) is a vector of hash-maps
@@ -42,26 +42,15 @@
 
 (defn handle-date
   "Receives a mapping which represents cards."
-  [cards]
-  (println (last cards))
-  (if (some true? [(nil? (:inception cards)) (nil? ((keyword "publication date") cards))])
-    cards
-    (let [cards (last cards)
-          new-cards (map #(assoc % :inception
-                               (Integer/parseInt (subs (:inception %) (- (count (:inception %)) 4))))
-                         cards)
-
-          final-cards (map #(assoc % (keyword "publication date")
-                                  (Integer/parseInt (subs ((keyword "publication date") %)
-                                                          (- (count ((keyword "publication date") %)) 4))))
-                           new-cards)]
-      (println final-cards)
-      (into {} final-cards))))
-
-(defn compare-numerical-values
-  "Receives two cards and compares their numerical values."
-  [cardA cardB]
-  (every? identity (map #(<= %1 %2) (vals cardA) (vals cardB))))
+  [card]
+  (if (some true? [(nil? (:inception card)) (nil? (:publication-date card))])
+    card
+    (let [new-card (-> card
+                        (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4))))
+                        (assoc :publication-date
+                                  (Integer/parseInt (subs (:publication-date card)(- (count (:publication-date card)) 4))))
+                         )]
+      new-card)))
 
 (defmulti compare-no-nil
           "Called if values are not nil."
@@ -93,11 +82,20 @@
 
 (defn compare-cards
   [cardA cardB compare-by]
-  (let [new-cardA (second (handle-date cardA))
-        new-cardB (second (handle-date cardB))]
-    (map (fn [[key comp-fn]]
+  (let [new-cardA (vals (handle-date cardA))
+        new-cardB (vals (handle-date cardB))]
+    (every? identity (map (fn [[key comp-fn]]
            (compare-nil comp-fn (get new-cardA key) (get new-cardB key) key))
-         compare-by)))
+         compare-by))))
+
+(defn get-order-relation
+  "Returns the order relation of the keys in the compare-by hash-map."
+  [compare-by deck]
+  (vec (for [cardA deck
+             cardB deck
+             :when (compare-cards cardA cardB compare-by)]
+         [(key cardA) (key cardB)])))
+
 
 
 ;(println (compare-cards {:a 1 :b 2} {:a 1 :b 2}))           ; true
@@ -107,18 +105,20 @@
 #_(let [s (:inception {:a 1 :b " hello " :c " 2016 " :inception " 08.2017 " (keyword " publication date ") " 02.03.2019 "})]
 (println (Integer/parseInt (subs s (- (count s) 4)))))
 
-;(println (handle-date {(keyword " Uno ") {:a 1 :b " hello " :c " 2016 " :inception " 08.2017 " (keyword " publication date ") " 02.03.2019 "}}))
+;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date "05.08.1993"}}))))
 
 (let [deck (get-deck-as-dict "resources/week1/card_games.csv")
       cardA (first deck)
       cardB (second deck)
-      compare-by {(keyword "game-name") =
-                  (keyword "publication-date") <=
-                  (keyword "min-num-players") <=
-                  (keyword "max-num-players") <=
-                  (keyword "min-age") <=
-                  :inception <=}]
+      compare-by {:game-name        <=
+                  :publication-date <=
+                  :min-num-players  <=
+                  :max-num-players <=
+                  :min-age          <=
+                  :inception                   <=}]
   ;(println cardA)
   ;(println cardB)
   ;(println compare-by)
-  (println (compare-cards cardA cardB compare-by)))
+  ;(println (compare-cards cardA cardB compare-by))
+  (println (get-order-relation compare-by deck))
+  )
