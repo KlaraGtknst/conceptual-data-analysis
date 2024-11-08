@@ -51,8 +51,8 @@
                      (cond-> (:publication-date card)
                              (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
     ;(println [new-card])
-    ;(into {} [new-card])
-    new-card
+    (into {} [new-card])
+    ;new-card
     ))
 
 
@@ -78,7 +78,10 @@
 (defmethod compare-no-nil
   :game-name                                                ; Lexicographic comparison
   [_ _ valA valB]
-  (= 0 (compare valA valB)))
+  ;(println "Not nil")
+  ;(= 0 (compare valA valB))
+  true
+  )
 
 (defn compare-nil
   " Compares two values. If one of the values is nil, the result is true. "
@@ -92,13 +95,18 @@
   "Compares two cards by comparing each of their values wrt. the values of the keys defined in compare-by.
   Returns true if ALL the cards' values are in relation."
   [cardA cardB compare-by]
-  (let [new-cardA (vals (handle-date cardA))                ; handle-date: year == last 4 characters
-        new-cardB (vals (handle-date cardB))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
-    ;(println (key new-cardA))
-    ;(println cardA)
+  ;(let [new-cardA (second (first (handle-date cardA)))                ; handle-date: year == last 4 characters
+  ;      new-cardB (second (first  (handle-date cardB)))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
+  ;  (println "new card" new-cardA)
+  ;(println (second  cardA))
+  #_(println "RESULT" (:game-name (second cardA)) (:game-name (second cardB))
+           (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
+                            (compare-nil comp-fn (get (second cardA) key) (get (second cardB) key) key)) ; compare-nil: compare values of the cards
+                          compare-by)))
     (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
-                            (compare-nil comp-fn (get new-cardA key) (get new-cardB key) key)) ; compare-nil: compare values of the cards
-                          compare-by))))
+                            (compare-nil comp-fn (get (second cardA) key) (get (second cardB) key) key)) ; compare-nil: compare values of the cards
+                          compare-by)))
+; )
 
 (defn get-order-relation
   "Returns the order relation of the cards defined by their keys (game-name).
@@ -158,7 +166,7 @@
     ;(println (compare-cards cardA cardB compare-by))
     ;(write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
-    (println (count order))
+    (println "order" order)
     ;(println (read-map-from-file "resources/week1/order.edn"))
     ;(println (read-map-from-file "resources/week1/deck.edn"))
     )
@@ -230,7 +238,7 @@
   ;(println (convert-format [deck compare-by] :set-vectors))
   )
 
-;(println (handle-date ["Trumped Up Cards" {:game-name "Trumped Up Cards", :publication-date 2016, :min-num-players 4, :max-num-players 8, :min-age 18, :inception nil}]))
+;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
 
 
 
