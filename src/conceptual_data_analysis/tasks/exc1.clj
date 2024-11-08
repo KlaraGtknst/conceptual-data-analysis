@@ -103,6 +103,7 @@
            (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
                             (compare-nil comp-fn (get (second cardA) key) (get (second cardB) key) key)) ; compare-nil: compare values of the cards
                           compare-by)))
+  (println compare-by)
     (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
                             (compare-nil comp-fn (get (second cardA) key) (get (second cardB) key) key)) ; compare-nil: compare values of the cards
                           compare-by)))
@@ -166,7 +167,7 @@
     ;(println (compare-cards cardA cardB compare-by))
     (write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
-    (println "order" (count order))
+    (println "order" order)
     ;(println (read-map-from-file "resources/week1/order.edn"))
     ;(println (read-map-from-file "resources/week1/deck.edn"))
     )
@@ -178,71 +179,81 @@
 (defmulti
   convert-format-from-characteristic
   "Converts the format of the ordered set to the desired format."
-  (fn [poset format]
+  (fn [poset format]                                        ; poset: Base-set, order-relation
     format))
 
 (defmethod
   convert-format-from-characteristic
   :set-vectors
   [poset format]
-  (get-order-relation (second poset) (first poset)))
+  [(first poset) (into #{} (for [cardA (vals (first poset))
+                     cardB (vals (first poset))
+                     :when ((second poset) (:game-name cardA) (:game-name cardB))]  ; :when: filter -> only return card <= cardB pairs
+                 [(:game-name cardA) (:game-name cardB)]))])
 
 (defmethod
   convert-format-from-characteristic
   :matrix                                                   ; implement as mapping
   [poset format]
-  (into {} (for [cardA (first poset)]                                    ; key
-    [(key cardA) (into {} (for [cardB (first poset)]
-      [(key cardB) (compare-cards cardA cardB (second poset))]))]) )                ; compare cards
+  [(first poset)
+   (into {} (for [cardA (vals (first poset))]                                    ; key
+    [(:game-name cardA)
+     (into {} (for [cardB (vals (first poset))]
+      [(:game-name cardB)
+       ((second poset) cardA cardB)]))]))
+   ]               ; compare cards
     )
 
 (defmethod
   convert-format-from-characteristic
   :adjacency-list
   [poset format]
-  (into {} (for [cardA (first poset)]                                    ; key
-    [(key cardA) (into #{} (for [cardB (first poset)
-                                 :when (compare-cards cardA cardB (second poset))]
-      (key cardB)))])
-        )                ; compare cards
+  [(first poset)
+   (into {} (for [cardA (vals (first poset))]                                    ; key
+    [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
+                                 :when ((second poset) (:game-name cardA) (:game-name cardB) )]
+      (:game-name cardB)))])
+        )
+   ]
         )
 
-(defmulti convert-format-to-characteristic
-          "Converts the format of the ordered set to the desired format."
-  (fn [poset format]
-    format))
-
-(defmethod convert-format-to-characteristic
-  :set-vectors
-  [poset format]
-  (println (second poset))
-  #(.contains (second poset) [(first %1) (first %2)])
-  )
-
-(defmethod convert-format-to-characteristic
+(defmethod
+  convert-format-from-characteristic
   :characteristic-function
-  [poset format]
+  [poset format]                                            ; poset: Base-set, order-relation
   poset)
 
-(defmethod convert-format-to-characteristic                 ; TODO
-  :default                                                  ; matrix & adjacency-list
-  [poset format]
-  (let [order-relation (second poset)
-        data-type (type (first (vals order-relation)))]
-    (println "order relation " order-relation)
-    (if (= data-type clojure.lang.PersistentHashSet)
-      #(.contains (order-relation (first %1)) (first %2))                                           ; adjacency-list
-      #((order-relation (first %1)) (first %2))                                                    ; matrix
-      )
+
+
+(defn convert-format-to-characteristic
+  [poset]
+
+  (let [order-relation (second poset)]
+
+
+    (if (= (type order-relation) clojure.lang.PersistentHashSet)
+      [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors
+
+       (if (= (type order-relation) clojure.lang.PersistentHashMap)
+         (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
+            [(first poset) #(.contains (order-relation (:game-name %1)) (:game-name %2))   ]                                        ; adjacency-list
+            [(first poset) #((order-relation (:game-name %1)) (:game-name %2))   ]                                                 ; matrix
+          )
+         poset                                              ; characteristic-function
+         )
     )
     )
+  )
+
 
 
 (defn convert-format
   ""
-  [ordered-set format]
-  (convert-format-from-characteristic ordered-set format)
-  )
+  [poset format]
+  (let [poset-characteristic (convert-format-to-characteristic poset)]
+  (convert-format-from-characteristic poset-characteristic format)
+
+  ))
 
 (defn count-ones
   "Counts the number of ones in a nested map with values 0 or 1."
@@ -265,8 +276,8 @@
                   :max-num-players  <=
                   :min-age          <=
                   :inception        <=}
-      matrix-order (convert-format [deck compare-by] :matrix)
-      adj-order (convert-format [deck compare-by] :adjacency-list)]
+      matrix-poset (convert-format [deck order] :matrix)
+      adj-poset (convert-format [deck order] :adjacency-list)]
   ;(println (convert-format [deck compare-by] :set-vectors))
   ;(println (count-ones (convert-format [deck compare-by] :matrix)))
   ;(println (convert-format [deck compare-by] :adjacency-list))
@@ -275,11 +286,12 @@
   ;(println (convert-format-to-characteristic [deck order] :set-vectors))
   ;(println ((convert-format-to-characteristic [deck order] :set-vectors) (second deck) (first deck)))
 
-  ;(println (convert-format-to-characteristic [deck matrix-order] :matrix))
-  ;(println ((convert-format-to-characteristic [deck matrix-order] :matrix) (first deck) (second deck)))
+  (println "111" (second (convert-format matrix-poset :characteristic-function)))
+  (println "RESULT" (first (vals deck)) (second (vals deck)))
+  (println ((second (convert-format matrix-poset :characteristic-function)) (second (vals deck)) (first (vals deck))))
 
-  (println (convert-format-to-characteristic [deck adj-order] :adjacency-list))
-  (println ((convert-format-to-characteristic [deck adj-order] :adjacency-list) (first deck) (second deck)))
+  ;(println (convert-format adj-poset :characteristic-function))
+  ;(println ((convert-format adj-poset :characteristic-function) (first deck) (second deck)))
   )
 
 ;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
