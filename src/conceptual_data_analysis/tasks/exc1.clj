@@ -50,7 +50,10 @@
                              (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4)))))
                      (cond-> (:publication-date card)
                              (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
-    new-card))
+    ;(println [new-card])
+    ;(into {} [new-card])
+    new-card
+    ))
 
 
 (defmulti compare-no-nil
@@ -80,8 +83,9 @@
 (defn compare-nil
   " Compares two values. If one of the values is nil, the result is true. "
   [compare-by valA valB key]
+  ;(println "NIL? " valA valB key)
   (if (some true? [(nil? valA) (nil? valB)])
-    true                                                    ; if one of the values is nil, return true
+    true                                                   ; if one of the values is nil, return true
     (compare-no-nil key compare-by valA valB)))             ; else compare the values
 
 (defn compare-cards
@@ -90,6 +94,8 @@
   [cardA cardB compare-by]
   (let [new-cardA (vals (handle-date cardA))                ; handle-date: year == last 4 characters
         new-cardB (vals (handle-date cardB))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
+    ;(println (key new-cardA))
+    ;(println cardA)
     (every? identity (map (fn [[key comp-fn]]               ; deconstruction: key & value extracted from element of compare-by
                             (compare-nil comp-fn (get new-cardA key) (get new-cardB key) key)) ; compare-nil: compare values of the cards
                           compare-by))))
@@ -100,7 +106,7 @@
   They are in relation if cardA <= cardB.
   Only cards which are in relation are part of the vector returned."
   [compare-by deck]
-  (vec (for [cardA deck
+  (into #{} (for [cardA deck
              cardB deck
              :when (compare-cards cardA cardB compare-by)]  ; :when: filter -> only return card <= cardB pairs
          [(key cardA) (key cardB)])))                       ; save only game-names
@@ -136,7 +142,7 @@
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date nil}}))))
 ;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception nil :publication-date nil}}))))
 
-#_(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
+(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
         cardA (first deck)
         cardB (second deck)
         compare-by {:game-name        <=
@@ -152,7 +158,7 @@
     ;(println (compare-cards cardA cardB compare-by))
     ;(write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
-    ;(println order)
+    (println (count order))
     ;(println (read-map-from-file "resources/week1/order.edn"))
     ;(println (read-map-from-file "resources/week1/deck.edn"))
     )
@@ -160,6 +166,80 @@
 ;; task 3
 
 ; TODO: Implement the function
+
+(defmulti
+  convert-format-from-characteristic
+  "Converts the format of the ordered set to the desired format."
+  (fn [poset format]
+    format))
+
+(defmethod
+  convert-format-from-characteristic
+  :set-vectors
+  [poset format]
+  (get-order-relation (second poset) (first poset)))
+
+(defmethod
+  convert-format-from-characteristic
+  :matrix                                                   ; implement as mapping
+  [poset format]
+  (into {} (for [cardA (first poset)]                                    ; key
+    [(key cardA) (into {} (for [cardB (first poset)]
+      [(key cardB) (compare-cards cardA cardB (second poset))]))]) )                ; compare cards
+    )
+
+
+
+#_(defmethod
+  convert-format-from-characteristic
+  :adjacency-list
+  [poset format]
+  (get-order-relation (second poset) (first poset)))
+
+(defn convert-format
+  ""
+  [ordered-set format]
+  (convert-format-from-characteristic ordered-set format)
+  )
+
+(defn count-ones
+  "Counts the number of ones in a nested map with values 0 or 1."
+  [m]
+  (reduce
+    (fn [sum v]
+      (cond
+        (map? v) (+ sum (count-ones v)) ; If the value is a map, recurse into it
+        (true? v ) (inc sum)               ; If the value is 1, increment the count
+        :else sum))                     ; Otherwise, keep the count as-is
+    0
+    (vals m)))
+
+
+(let [deck (read-map-from-file "resources/week1/deck.edn")
+      order (read-map-from-file "resources/week1/order.edn")
+      compare-by {:game-name        <=
+                  :publication-date <=
+                  :min-num-players  <=
+                  :max-num-players  <=
+                  :min-age          <=
+                  :inception        <=}]
+  ;(println (convert-format [deck compare-by] :set-vectors))
+  (println (count-ones (convert-format [deck compare-by] :matrix)))
+  (println (count (convert-format [deck compare-by] :matrix)))
+
+  ;(println (convert-format [deck compare-by] :set-vectors))
+  )
+
+;(println (handle-date ["Trumped Up Cards" {:game-name "Trumped Up Cards", :publication-date 2016, :min-num-players 4, :max-num-players 8, :min-age 18, :inception nil}]))
+
+
+
+
+
+
+
+
+
 
 
 
@@ -192,7 +272,7 @@
               ) (range n))))
 
 
-(defn order-relation?
+#_(defn order-relation?
   "Receives a base set and a relation.
   Returns true if the relation is an order relation."
   [base-set relation]
@@ -209,7 +289,8 @@
 
         ]
     (println "reflexive? " reflexive)
-    (println "anti-transitive? " anti-transitive))
+    (println "anti-transitive? " anti-transitive)
+    )
   )
 
 
@@ -239,10 +320,10 @@
              [0 0 1]
              [0 0 0]])
 
-(println "anti-symmetric (true): " (anti-transitive? base-set matrix)) ;; => true
+;(println "anti-symmetric (true): " (anti-transitive? base-set matrix)) ;; => true
 
 (def non-anti-transitive-matrix [[0 1 1]
                                  [0 0 1]
                                  [1 0 0]])
 
-(println "anti-symmetric (false): " (anti-transitive? base-set non-anti-transitive-matrix)) ;; => false
+;(println "anti-symmetric (false): " (anti-transitive? base-set non-anti-transitive-matrix)) ;; => false
