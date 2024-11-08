@@ -227,9 +227,14 @@
 (defmethod convert-format-to-characteristic                 ; TODO
   :default                                                  ; matrix & adjacency-list
   [poset format]
-  (into {} (for [cardA (first poset)]                                    ; key
-    [(key cardA) (into {} (for [cardB (first poset)]
-      [(key cardB) (compare-cards cardA cardB (second poset))]))]) )                ; compare cards
+  (let [order-relation (second poset)
+        data-type (type (first (vals order-relation)))]
+    (println "order relation " order-relation)
+    (if (= data-type clojure.lang.PersistentHashSet)
+      #(.contains (order-relation (first %1)) (first %2))                                           ; adjacency-list
+      #((order-relation (first %1)) (first %2))                                                    ; matrix
+      )
+    )
     )
 
 
@@ -259,14 +264,22 @@
                   :min-num-players  <=
                   :max-num-players  <=
                   :min-age          <=
-                  :inception        <=}]
+                  :inception        <=}
+      matrix-order (convert-format [deck compare-by] :matrix)
+      adj-order (convert-format [deck compare-by] :adjacency-list)]
   ;(println (convert-format [deck compare-by] :set-vectors))
   ;(println (count-ones (convert-format [deck compare-by] :matrix)))
   ;(println (convert-format [deck compare-by] :adjacency-list))
   ;(println (reduce #(+ %1 (count (second %2))) 0 (convert-format [deck compare-by] :adjacency-list)))
-  (println (convert-format-to-characteristic [deck order] :set-vectors))
   ;(println (first deck) (second deck))
-  (println ((convert-format-to-characteristic [deck order] :set-vectors) (second deck) (first deck)))
+  ;(println (convert-format-to-characteristic [deck order] :set-vectors))
+  ;(println ((convert-format-to-characteristic [deck order] :set-vectors) (second deck) (first deck)))
+
+  ;(println (convert-format-to-characteristic [deck matrix-order] :matrix))
+  ;(println ((convert-format-to-characteristic [deck matrix-order] :matrix) (first deck) (second deck)))
+
+  (println (convert-format-to-characteristic [deck adj-order] :adjacency-list))
+  (println ((convert-format-to-characteristic [deck adj-order] :adjacency-list) (first deck) (second deck)))
   )
 
 ;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
