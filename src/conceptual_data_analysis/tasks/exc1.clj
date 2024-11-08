@@ -166,7 +166,7 @@
     ;(println (compare-cards cardA cardB compare-by))
     ;(write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
-    (println "order" order)
+    (println "order" (count order))
     ;(println (read-map-from-file "resources/week1/order.edn"))
     ;(println (read-map-from-file "resources/week1/deck.edn"))
     )
@@ -196,13 +196,16 @@
       [(key cardB) (compare-cards cardA cardB (second poset))]))]) )                ; compare cards
     )
 
-
-
-#_(defmethod
+(defmethod
   convert-format-from-characteristic
   :adjacency-list
   [poset format]
-  (get-order-relation (second poset) (first poset)))
+  (into {} (for [cardA (first poset)]                                    ; key
+    [(key cardA) (into #{} (for [cardB (first poset)
+                                 :when (compare-cards cardA cardB (second poset))]
+      (key cardB)))])
+        )                ; compare cards
+        )
 
 (defn convert-format
   ""
@@ -232,10 +235,10 @@
                   :min-age          <=
                   :inception        <=}]
   ;(println (convert-format [deck compare-by] :set-vectors))
-  (println (count-ones (convert-format [deck compare-by] :matrix)))
-  (println (count (convert-format [deck compare-by] :matrix)))
+  ;(println (count-ones (convert-format [deck compare-by] :matrix)))
+  (println (convert-format [deck compare-by] :adjacency-list))
 
-  ;(println (convert-format [deck compare-by] :set-vectors))
+  (println (reduce #(+ %1 (count (second %2))) 0 (convert-format [deck compare-by] :adjacency-list)))
   )
 
 ;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
