@@ -164,7 +164,7 @@
     ;(println cardB)
     ;(println compare-by)
     ;(println (compare-cards cardA cardB compare-by))
-    ;(write-map-to-file order "resources/week1/order.edn")
+    (write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
     (println "order" (count order))
     ;(println (read-map-from-file "resources/week1/order.edn"))
@@ -207,6 +207,32 @@
         )                ; compare cards
         )
 
+(defmulti convert-format-to-characteristic
+          "Converts the format of the ordered set to the desired format."
+  (fn [poset format]
+    format))
+
+(defmethod convert-format-to-characteristic
+  :set-vectors
+  [poset format]
+  (println (second poset))
+  #(.contains (second poset) [(first %1) (first %2)])
+  )
+
+(defmethod convert-format-to-characteristic
+  :characteristic-function
+  [poset format]
+  poset)
+
+(defmethod convert-format-to-characteristic                 ; TODO
+  :default                                                  ; matrix & adjacency-list
+  [poset format]
+  (into {} (for [cardA (first poset)]                                    ; key
+    [(key cardA) (into {} (for [cardB (first poset)]
+      [(key cardB) (compare-cards cardA cardB (second poset))]))]) )                ; compare cards
+    )
+
+
 (defn convert-format
   ""
   [ordered-set format]
@@ -236,9 +262,11 @@
                   :inception        <=}]
   ;(println (convert-format [deck compare-by] :set-vectors))
   ;(println (count-ones (convert-format [deck compare-by] :matrix)))
-  (println (convert-format [deck compare-by] :adjacency-list))
-
-  (println (reduce #(+ %1 (count (second %2))) 0 (convert-format [deck compare-by] :adjacency-list)))
+  ;(println (convert-format [deck compare-by] :adjacency-list))
+  ;(println (reduce #(+ %1 (count (second %2))) 0 (convert-format [deck compare-by] :adjacency-list)))
+  (println (convert-format-to-characteristic [deck order] :set-vectors))
+  ;(println (first deck) (second deck))
+  (println ((convert-format-to-characteristic [deck order] :set-vectors) (second deck) (first deck)))
   )
 
 ;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
