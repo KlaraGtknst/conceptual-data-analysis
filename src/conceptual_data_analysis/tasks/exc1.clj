@@ -224,7 +224,7 @@
        (if (= (type order-relation) clojure.lang.PersistentHashMap)
          (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
            [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))]        ; adjacency-list
-            [(first poset) #((:game-name %2) ((:game-name %1) order-relation))]                     ; matrix
+            [(first poset) #(get (get order-relation (:game-name %1)) (:game-name %2))]                     ; matrix
           )
          poset                                              ; characteristic-function
          )
@@ -268,7 +268,7 @@
       characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
       set-vectors-poset [deck order]]
 
-    ;(println "matr" (second matrix-poset))
+    (println "matr" (second matrix-poset))
     ;(println "adj" (second adj-poset))
   ;; matr -> charac
   ;(println "111" (second (convert-format matrix-poset :characteristic-function)))
@@ -290,17 +290,17 @@
 
 
   ;; matr -> matr
-  ;(println (second (convert-format matrix-poset :matrix)))
+  (println "matr" (second (convert-format matrix-poset :matrix)))
   ;(println "Matr " (((second (convert-format matrix-poset :matrix)) (first (keys deck))) (second (keys deck))))
 
   ;; set-vectors -> set-vectors
   ;(println (second set-vectors-poset))
-  ;(println (second (convert-format set-vectors-poset :set-vectors)))
-  (println "set-vec " (.contains (second (convert-format set-vectors-poset :set-vectors)) [(first (keys deck)) (second (keys deck))]))
+    ;(println (second (convert-format set-vectors-poset :set-vectors)))
+    ;(println "set-vec " (.contains (second (convert-format set-vectors-poset :set-vectors)) [(first (keys deck)) (second (keys deck))]))
 
   ;; adj -> adj
-  (println (second (convert-format adj-poset :adjacency-list)))
-  (println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
+  ;(println "adj" (second (convert-format adj-poset :adjacency-list)))
+  ;(println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
   )
 
 
