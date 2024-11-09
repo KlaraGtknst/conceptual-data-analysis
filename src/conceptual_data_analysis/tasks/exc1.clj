@@ -162,7 +162,7 @@
     ;(println (compare-cards cardA cardB compare-by))
     (write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
-    (println "order" order)
+    ;(println "order" order)
     ;(println (read-map-from-file "resources/week1/order.edn"))
     ;(println (read-map-from-file "resources/week1/deck.edn"))
     )
@@ -183,7 +183,7 @@
   [poset format]
   [(first poset) (into #{} (for [cardA (vals (first poset))
                      cardB (vals (first poset))
-                     :when ((second poset) (:game-name cardA) (:game-name cardB))]  ; :when: filter -> only return card <= cardB pairs
+                     :when ((second poset) cardA cardB)]  ; :when: filter -> only return card <= cardB pairs
                  [(:game-name cardA) (:game-name cardB)]))])
 
 (defmethod
@@ -203,10 +203,17 @@
   convert-format-from-characteristic
   :adjacency-list
   [poset format]
+  ;(println "test")
+  ;(println "poset" (first (vals (first poset))) (second (vals (first poset))))
+  ;(println ((second poset) (second (vals (first poset))) (first (vals (first poset)))))
+  ;(println "res"  (for [cardA (vals (first poset))]                                    ; key
+  ;  [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
+  ;                               :when ((second poset) cardA cardB )]
+  ;    (:game-name cardB)))]))
   [(first poset)
    (into {} (for [cardA (vals (first poset))]                                    ; key
     [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
-                                 :when ((second poset) (:game-name cardA) (:game-name cardB) )]
+                                 :when ((second poset) cardA cardB )]
       (:game-name cardB)))])
         )
    ]
@@ -225,9 +232,9 @@
   [poset]
 
   (let [order-relation (second poset)]
-    (println "order-relation" order-relation)
-    (println "poset" (first (vals (first poset))) (second (vals (first poset))))
-    (println (#(.contains (second poset) [(:game-name %1) (:game-name %2)]) (second (vals (first poset))) (first (vals (first poset)))))
+    ;(println "order-relation" order-relation)
+    ;(println "poset" (first (vals (first poset))) (second (vals (first poset))))
+
 
 
     (if (= (type order-relation) clojure.lang.PersistentHashSet)
@@ -235,7 +242,8 @@
 
        (if (= (type order-relation) clojure.lang.PersistentHashMap)
          (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
-            [(first poset) #(.contains ((:game-name %1) order-relation) (:game-name %2))   ]                                        ; adjacency-list
+           ;(println "Test111" (#(.contains (get order-relation (:game-name %1)) (:game-name %2)) (first (vals (first poset))) (second (vals (first poset))))) ; TODO: klappt nicht
+           [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))   ]                                        ; adjacency-list TODO: einkommentieren
             [(first poset) #((:game-name %2) ((:game-name %1) order-relation))   ]                                                 ; matrix
           )
          poset                                              ; characteristic-function
@@ -280,8 +288,8 @@
       characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
       set-vectors-poset [deck order]]
 
-    (println "matr" (second matrix-poset))
-    (println "adj" (second adj-poset))
+    ;(println "matr" (second matrix-poset))
+    ;(println "adj" (second adj-poset))
   ;; matr -> charac
   ;(println "111" (second (convert-format matrix-poset :characteristic-function)))
   ;(println "RESULT" (first (vals deck)) (second (vals deck)))
@@ -292,9 +300,9 @@
   ;(println ((second (convert-format adj-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
 
   ;; set-vectors -> charac
-  (println (= clojure.lang.PersistentHashSet (type (second set-vectors-poset))))
-  (println (second (convert-format set-vectors-poset :characteristic-function)))
-  (println "set-vec -> char" ((second (convert-format set-vectors-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
+  ;(println (= clojure.lang.PersistentHashSet (type (second set-vectors-poset))))
+  ;(println (second (convert-format set-vectors-poset :characteristic-function)))
+  ;(println "set-vec -> char" ((second (convert-format set-vectors-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
 
   ;; charac -> charc
   ;(println (convert-format characteristic-poset :characteristic-function))
@@ -306,13 +314,13 @@
   ;(println "Matr " (((second (convert-format matrix-poset :matrix)) (first (keys deck))) (second (keys deck))))
 
   ;; set-vectors -> set-vectors
-  (println (second set-vectors-poset))
-  (println (second (convert-format set-vectors-poset :set-vectors)))
+  ;(println (second set-vectors-poset))
+  ;(println (second (convert-format set-vectors-poset :set-vectors)))
   (println "set-vec " (.contains (second (convert-format set-vectors-poset :set-vectors)) [(first (keys deck)) (second (keys deck))]))
 
   ;; adj -> adj
-  (println (convert-format adj-poset :adjacency-list))
-  (println "Adj " ((second (convert-format adj-poset :adjacency-list)) (first (vals deck)) (second (vals deck))))
+  (println (second (convert-format adj-poset :adjacency-list)))
+  (println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
   )
 
 ;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
