@@ -50,7 +50,6 @@
                              (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4)))))
                      (cond-> (:publication-date card)
                              (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
-    ;(println [new-card])
     (into {} [new-card])
     ;new-card
     ))
@@ -78,7 +77,6 @@
 (defmethod compare-no-nil
   :game-name                                                ; Lexicographic comparison
   [_ _ valA valB]
-  ;(println "Not nil")
   ;(= 0 (compare valA valB))
   true
   )
@@ -86,7 +84,6 @@
 (defn compare-nil
   " Compares two values. If one of the values is nil, the result is true. "
   [compare-by valA valB key]
-  ;(println "NIL? " valA valB key)
   (if (some true? [(nil? valA) (nil? valB)])
     true                                                   ; if one of the values is nil, return true
     (compare-no-nil key compare-by valA valB)))             ; else compare the values
@@ -98,7 +95,6 @@
   ;(let [new-cardA (second (first (handle-date cardA)))                ; handle-date: year == last 4 characters
   ;      new-cardB (second (first  (handle-date cardB)))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
 
-  (println compare-by)
     (every? identity (map (fn [[attribute comp-fn]]               ; deconstruction: key (attribute) & value extracted from element of compare-by
                             (compare-nil comp-fn (attribute cardA) (attribute cardB) attribute)) ; compare-nil: compare values of the cards
                           compare-by)))
@@ -168,9 +164,6 @@
     )
 
 ;; task 3
-
-; TODO: Implement the function
-
 (defmulti
   convert-format-from-characteristic
   "Converts the format of the ordered set to the desired format."
@@ -203,13 +196,6 @@
   convert-format-from-characteristic
   :adjacency-list
   [poset format]
-  ;(println "test")
-  ;(println "poset" (first (vals (first poset))) (second (vals (first poset))))
-  ;(println ((second poset) (second (vals (first poset))) (first (vals (first poset)))))
-  ;(println "res"  (for [cardA (vals (first poset))]                                    ; key
-  ;  [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
-  ;                               :when ((second poset) cardA cardB )]
-  ;    (:game-name cardB)))]))
   [(first poset)
    (into {} (for [cardA (vals (first poset))]                                    ; key
     [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
@@ -232,19 +218,13 @@
   [poset]
 
   (let [order-relation (second poset)]
-    ;(println "order-relation" order-relation)
-    ;(println "poset" (first (vals (first poset))) (second (vals (first poset))))
-
-
-
     (if (= (type order-relation) clojure.lang.PersistentHashSet)
       [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors
 
        (if (= (type order-relation) clojure.lang.PersistentHashMap)
          (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
-           ;(println "Test111" (#(.contains (get order-relation (:game-name %1)) (:game-name %2)) (first (vals (first poset))) (second (vals (first poset))))) ; TODO: klappt nicht
-           [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))   ]                                        ; adjacency-list TODO: einkommentieren
-            [(first poset) #((:game-name %2) ((:game-name %1) order-relation))   ]                                                 ; matrix
+           [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))]        ; adjacency-list
+            [(first poset) #((:game-name %2) ((:game-name %1) order-relation))]                     ; matrix
           )
          poset                                              ; characteristic-function
          )
@@ -322,9 +302,6 @@
   (println (second (convert-format adj-poset :adjacency-list)))
   (println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
   )
-
-;(println (handle-date [["Magic: The Gathering" {:game-name "Magic: The Gathering", :publication-date 05.08.1993, :min-num-players 2, :max-num-players 2, :min-age nil, :inception 05.08.1993}]]))
-
 
 
 
