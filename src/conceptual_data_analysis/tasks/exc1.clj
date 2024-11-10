@@ -183,6 +183,7 @@
   convert-format-from-characteristic
   :matrix                                                   ; implement as mapping
   [poset format]
+  ;(println "basset" (second poset))
   [(first poset)
    (into {} (for [cardA (vals (first poset))]                                    ; key
     [(:game-name cardA)
@@ -216,15 +217,16 @@
 (defn convert-format-to-characteristic
   " A characteristic functions receives mappings of two cards, i.e. only inner map, and returns true if in relation."
   [poset]
+  (println "order relation" (second poset))
 
   (let [order-relation (second poset)]
     (if (= (type order-relation) clojure.lang.PersistentHashSet)
       [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors
 
-       (if (= (type order-relation) clojure.lang.PersistentHashMap)
+       (if (or (= (type order-relation) clojure.lang.PersistentHashMap) (= (type order-relation) clojure.lang.PersistentArrayMap))
          (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
            [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))]        ; adjacency-list
-            [(first poset) #(get (get order-relation (:game-name %1)) (:game-name %2))]                     ; matrix
+           [(first poset) #(get (get order-relation (:game-name %1)) (:game-name %2))]                     ; matrix
           )
          poset                                              ; characteristic-function
          )
@@ -237,7 +239,9 @@
 (defn convert-format
   ""
   [poset format]
+  ;(println (type (second poset)))
   (let [poset-characteristic (convert-format-to-characteristic poset)]
+    ;(println "res order" (second poset-characteristic))
   (convert-format-from-characteristic poset-characteristic format)
 
   ))
@@ -290,7 +294,7 @@
 
 
   ;; matr -> matr
-  (println "matr" (second (convert-format matrix-poset :matrix)))
+    ;(println "matr" (second (convert-format matrix-poset :matrix)))
   ;(println "Matr " (((second (convert-format matrix-poset :matrix)) (first (keys deck))) (second (keys deck))))
 
   ;; set-vectors -> set-vectors
@@ -322,10 +326,9 @@
   "Receives a base set and a relation.
   Returns true if the relation is reflexive."
   [base-set relation]
-  (let [n (count base-set)
-        reflexive (every? (fn [i] (= 1 (get-in relation [i i])))
-                          (range n))]
-    reflexive))
+  (every? identity (map (fn [card] (get (get relation (:game-name card)) (:game-name card)))
+                          (vals base-set))))
+
 
 (defn anti-transitive? [base-set matrix]
   ; FIXME: This is not correct
@@ -342,17 +345,21 @@
               ) (range n))))
 
 
-#_(defn order-relation?
+(defn order-relation?
   "Receives a base set and a relation.
   Returns true if the relation is an order relation."
   [base-set relation]
+  (println base-set)
+  (println relation)
+  (println "matr" (second (convert-format [base-set relation] :matrix)))
 
   (let [; reflexivity: use matrix: O(n)
         ; TODO: cast relation to matrix
-        reflexive (reflexive? base-set relation)
+        matr-order (second (convert-format [base-set relation] :matrix))
+        reflexive (reflexive? base-set matr-order)
 
         ;; antisymmetry: use matrix: O(n^2) ?
-        anti-transitive (anti-transitive? base-set relation)
+        anti-transitive (anti-transitive? base-set matr-order)
 
 
         ;; transitivity
@@ -369,13 +376,15 @@
 
 
 
-#_(def matrix [[1 0 1]
-             [0 1 0]
-             [0 0 1]])
+(def sample-matrix {"Uno" {"Uno" true "skat" false "Poker" false}
+             "skat" {"Uno" false "skat" true "Poker" false}
+             "Poker" {"Uno" false "skat" false "Poker" true}})
 
-(def base-set [1 2 3])
+(def base-set {"Uno" {:game-name "Uno" :a 12 :b 10}
+               "skat" {:game-name "skat" :a 12 :b 10}
+               "Poker" {:game-name "Poker" :a 12 :b 10}})
 
-;(println "reflexive (true): " (reflexive? base-set matrix)) ;; => true
+(println "reflexive (true): " (order-relation? base-set sample-matrix)) ;; => true
 
 
 
