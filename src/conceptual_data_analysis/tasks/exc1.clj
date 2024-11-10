@@ -171,7 +171,7 @@
     format))
 
 (defmethod
-  convert-format-from-characteristic
+  convert-format-from-characteristic                        ; O(N^2), bc of for-loop two times over the base-set
   :set-vectors
   [poset format]
   [(first poset) (into #{} (for [cardA (vals (first poset))
@@ -180,7 +180,7 @@
                  [(:game-name cardA) (:game-name cardB)]))])
 
 (defmethod
-  convert-format-from-characteristic
+  convert-format-from-characteristic                        ;O(N^2), bc of for-loop two times over the base-set
   :matrix                                                   ; implement as mapping
   [poset format]
   ;(println "basset" (second poset))
@@ -194,7 +194,7 @@
     )
 
 (defmethod
-  convert-format-from-characteristic
+  convert-format-from-characteristic                        ; O(N^2), bc of for-loop two times over the base-set
   :adjacency-list
   [poset format]
   [(first poset)
@@ -207,7 +207,7 @@
         )
 
 (defmethod
-  convert-format-from-characteristic
+  convert-format-from-characteristic                        ; O(1), returns the characteristic function
   :characteristic-function
   [poset format]                                            ; poset: Base-set, order-relation
   poset)
@@ -219,14 +219,14 @@
   [poset]
   (let [order-relation (second poset)]
     (if (= (type order-relation) clojure.lang.PersistentHashSet)
-      [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors
+      [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors -> O(N^2) lookup via contains (run over all elements)
 
        (if (or (= (type order-relation) clojure.lang.PersistentHashMap) (= (type order-relation) clojure.lang.PersistentArrayMap))
          (if (= (type (first (vals order-relation))) clojure.lang.PersistentHashSet)
-           [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))]        ; adjacency-list
-           [(first poset) #(get (get order-relation (:game-name %1)) (:game-name %2))]                     ; matrix
+           [(first poset) #(.contains (get order-relation (:game-name %1)) (:game-name %2))]        ; adjacency-list -> O(log(N) + N) get hashset in O(log(N)) cf. Clojure lecture, lookup via contains (run over all <=N elements)
+           [(first poset) #(get (get order-relation (:game-name %1)) (:game-name %2))]              ; matrix -> O(log(N) + log(N)) get hashset in O(log(N)) cf. Clojure lecture
           )
-         poset                                              ; characteristic-function
+         poset                                              ; characteristic-function -> return the characteristic function: O(1)
          )
     )
     )
@@ -234,18 +234,22 @@
 
 
 
-(defn convert-format
-  ""
+(defn convert-format                                        ; O(N^2)
+  "Takes a poset and a format and converts the poset to the desired format.
+  Returns the converted poset.
+  Poset has the format [base-set order-relation].
+  First, the characteristic function is determined.
+  Then, the format is converted to the desired format."
   [poset format]
   ;(println (type (second poset)))
-  (let [poset-characteristic (convert-format-to-characteristic poset)]
+  (let [poset-characteristic (convert-format-to-characteristic poset)] ; O(N^2)
     ;(println "res order" (second poset-characteristic))
-  (convert-format-from-characteristic poset-characteristic format)
-
+  (convert-format-from-characteristic poset-characteristic format) ; O(N^2)
   ))
 
 (defn count-ones
-  "Counts the number of ones in a nested map with values 0 or 1."
+  "Counts the number of ones in a nested map with values 0 or 1.
+  Helper function for testing."
   [m]
   (reduce
     (fn [sum v]
@@ -256,7 +260,7 @@
     0
     (vals m)))
 
-
+;; test task 3
 (let [deck (read-map-from-file "resources/week1/deck.edn")
       order (read-map-from-file "resources/week1/order.edn")
       compare-by {:game-name        <=
@@ -308,19 +312,8 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 ;; task 4
-(defn reflexive?
+(defn reflexive?                                            ; O(N*log(N)), bc of for-loop over the base-set and get in O(log(N)) cf. Clojure lecture
   "Receives a base set and a relation.
   Returns true if the relation is reflexive."
   [base-set relation]
@@ -328,7 +321,7 @@
                           (vals base-set))))
 
 
-(defn anti-symmetric? [base-set matrix]
+(defn anti-symmetric? [base-set matrix]                     ; O(N^2*log(N)*2), bc of for-loop two times over the base-set
   (every? identity (for [cardA (vals base-set)
                          cardB (vals base-set)
                          :when (and (get (get matrix (:game-name cardA)) (:game-name cardB))
@@ -336,7 +329,7 @@
                      (= (:game-name cardA) (:game-name cardB))))
   )
 
-(defn transitive?
+(defn transitive?                                           ; O(N^3log(N)*3), bc of for-loop three times over the base-set
   "Receives a base set and a relation.
   Returns true if the relation is transitive."
   [base-set relation]
@@ -349,17 +342,13 @@
   )
 
 
-(defn order-relation?
+(defn order-relation?                                       ; O(N^3log(N)*3), bc of transitive? is O(N^3log(N)*3)
   "Receives a base set and a relation.
   Returns true if the relation is an order relation."
   [base-set relation]
-  ;(println base-set)
-  ;(println relation)
-  ;(println "matr" (second (convert-format [base-set relation] :matrix)))
+  (let [matr-order (second (convert-format [base-set relation] :matrix)) ; convert to matrix
 
-  (let [; reflexivity: use matrix: O(n)
-        ; TODO: cast relation to matrix
-        matr-order (second (convert-format [base-set relation] :matrix))
+        ;; reflexivity
         reflexive (reflexive? base-set matr-order)
 
         ;; antisymmetry: use matrix: O(n^2) ?
@@ -368,7 +357,6 @@
 
         ;; transitivity
         transitive (transitive? base-set matr-order)
-
         ]
     (println "reflexive? " reflexive)
     (println "anti-symmetric? " anti-symmetric)
@@ -379,9 +367,7 @@
 
 
 
-
-
-
+;; test task 4
 
 (def order-relation-matrix {"Uno" {"Uno" true "skat" false "Poker" false}
              "skat" {"Uno" false "skat" true "Poker" false}
