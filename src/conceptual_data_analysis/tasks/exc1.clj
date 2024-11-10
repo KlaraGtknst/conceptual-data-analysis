@@ -330,28 +330,34 @@
                           (vals base-set))))
 
 
-(defn anti-transitive? [base-set matrix]
-  ; FIXME: This is not correct
-  (let [n (count base-set)]
-    (every? (fn [i]
-              (every? (fn [j]
-                        (every? (fn [k]
-                                  (if (and (= 1 (get-in matrix [i j]))
-                                           (= 1 (get-in matrix [j k])))
-                                    (not= 1 (get-in matrix [k i]))) ; Checking for anti-transitivity
-                                  true)                     ; Proceed even if the condition doesn't apply
-                                (range n))
-                        ) (range n))
-              ) (range n))))
+(defn anti-symmetric? [base-set matrix]
+  (every? identity (for [cardA (vals base-set)
+                         cardB (vals base-set)
+                         :when (and (get (get matrix (:game-name cardA)) (:game-name cardB))
+                                    (get (get matrix (:game-name cardB)) (:game-name cardA)))]
+                     (= (:game-name cardA) (:game-name cardB))))
+  )
+
+(defn transitive?
+  "Receives a base set and a relation.
+  Returns true if the relation is transitive."
+  [base-set relation]
+  (every? identity (for [cardA (vals base-set)
+                         cardB (vals base-set)
+                         cardC (vals base-set)
+                         :when (and (get (get relation (:game-name cardA)) (:game-name cardB))
+                                    (get (get relation (:game-name cardB)) (:game-name cardC)))]
+                     (get (get relation (:game-name cardA)) (:game-name cardC))))
+  )
 
 
 (defn order-relation?
   "Receives a base set and a relation.
   Returns true if the relation is an order relation."
   [base-set relation]
-  (println base-set)
-  (println relation)
-  (println "matr" (second (convert-format [base-set relation] :matrix)))
+  ;(println base-set)
+  ;(println relation)
+  ;(println "matr" (second (convert-format [base-set relation] :matrix)))
 
   (let [; reflexivity: use matrix: O(n)
         ; TODO: cast relation to matrix
@@ -359,14 +365,17 @@
         reflexive (reflexive? base-set matr-order)
 
         ;; antisymmetry: use matrix: O(n^2) ?
-        anti-transitive (anti-transitive? base-set matr-order)
+        anti-symmetric (anti-symmetric? base-set matr-order)
 
 
         ;; transitivity
+        transitive (transitive? base-set matr-order)
 
         ]
     (println "reflexive? " reflexive)
-    (println "anti-transitive? " anti-transitive)
+    (println "anti-symmetric? " anti-symmetric)
+    (println "transitive? " transitive)
+    (and reflexive anti-symmetric transitive)
     )
   )
 
@@ -376,33 +385,29 @@
 
 
 
-(def sample-matrix {"Uno" {"Uno" true "skat" false "Poker" false}
+(def order-relation-matrix {"Uno" {"Uno" true "skat" false "Poker" false}
              "skat" {"Uno" false "skat" true "Poker" false}
+             "Poker" {"Uno" false "skat" false "Poker" true}})
+
+(def not-ref-matrix {"Uno" {"Uno" true "skat" false "Poker" false}
+             "skat" {"Uno" false "skat" true "Poker" false}
+             "Poker" {"Uno" false "skat" false "Poker" false}})
+
+(def not-antisym-matrix {"Uno" {"Uno" true "skat" false "Poker" true}
+             "skat" {"Uno" false "skat" true "Poker" false}
+             "Poker" {"Uno" true "skat" false "Poker" true}})
+
+(def not-trans-matrix {"Uno" {"Uno" true "skat" true "Poker" false}
+             "skat" {"Uno" false "skat" true "Poker" true}
              "Poker" {"Uno" false "skat" false "Poker" true}})
 
 (def base-set {"Uno" {:game-name "Uno" :a 12 :b 10}
                "skat" {:game-name "skat" :a 12 :b 10}
                "Poker" {:game-name "Poker" :a 12 :b 10}})
 
-(println "reflexive (true): " (order-relation? base-set sample-matrix)) ;; => true
+(println "order-relation (true): " (order-relation? base-set order-relation-matrix)) ;; => true
+(println "not-ref-relation (false): " (order-relation? base-set not-ref-matrix)) ;; => false
+(println "not-antisym-relation (false): " (order-relation? base-set not-antisym-matrix)) ;; => false
+(println "not-trans-relation (false): " (order-relation? base-set not-trans-matrix)) ;; => false
 
 
-
-#_(def non-reflexive-matrix [[0 0 0]
-                           [0 1 0]
-                           [0 0 1]])
-
-;(println "reflexive (false): " (reflexive? base-set non-reflexive-matrix)) ;; => false
-
-
-(def matrix [[0 1 0]
-             [0 0 1]
-             [0 0 0]])
-
-;(println "anti-symmetric (true): " (anti-transitive? base-set matrix)) ;; => true
-
-(def non-anti-transitive-matrix [[0 1 1]
-                                 [0 0 1]
-                                 [1 0 0]])
-
-;(println "anti-symmetric (false): " (anti-transitive? base-set non-anti-transitive-matrix)) ;; => false
