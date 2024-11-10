@@ -217,8 +217,6 @@
 (defn convert-format-to-characteristic
   " A characteristic functions receives mappings of two cards, i.e. only inner map, and returns true if in relation."
   [poset]
-  (println "order relation" (second poset))
-
   (let [order-relation (second poset)]
     (if (= (type order-relation) clojure.lang.PersistentHashSet)
       [(first poset) #(.contains (second poset) [(:game-name %1) (:game-name %2)])] ; set of vectors
@@ -272,7 +270,7 @@
       characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
       set-vectors-poset [deck order]]
 
-    (println "matr" (second matrix-poset))
+  ;(println "matr" (second matrix-poset))
     ;(println "adj" (second adj-poset))
   ;; matr -> charac
   ;(println "111" (second (convert-format matrix-poset :characteristic-function)))
@@ -405,9 +403,9 @@
                "skat" {:game-name "skat" :a 12 :b 10}
                "Poker" {:game-name "Poker" :a 12 :b 10}})
 
-(println "order-relation (true): " (order-relation? base-set order-relation-matrix)) ;; => true
-(println "not-ref-relation (false): " (order-relation? base-set not-ref-matrix)) ;; => false
-(println "not-antisym-relation (false): " (order-relation? base-set not-antisym-matrix)) ;; => false
-(println "not-trans-relation (false): " (order-relation? base-set not-trans-matrix)) ;; => false
+;(println "order-relation (true): " (order-relation? base-set order-relation-matrix)) ;; => true
+;(println "not-ref-relation (false): " (order-relation? base-set not-ref-matrix)) ;; => false
+;(println "not-antisym-relation (false): " (order-relation? base-set not-antisym-matrix)) ;; => false
+;(println "not-trans-relation (false): " (order-relation? base-set not-trans-matrix)) ;; => false
 
 
