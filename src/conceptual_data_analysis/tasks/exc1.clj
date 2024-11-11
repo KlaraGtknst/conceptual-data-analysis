@@ -427,8 +427,8 @@
 (def adj-poset (convert-format [deck order] :adjacency-list))
 (def characteristic-poset [deck #(compare-cards %1 %2 compare-by)])
 (def set-vectors-poset [deck order])
-(println "adj-relation" (second adj-poset))
-(println "Pareto Optima: " (get-pareto-optima adj-poset)) ;; => #{Uno}
+;(println "adj-relation" (second adj-poset))
+;(println "Pareto Optima: " (get-pareto-optima adj-poset)) ;; => #{Uno}
 
 
 
@@ -439,8 +439,18 @@
   (let [[base-set characteristic-relation] (convert-format [base-set relation] :characteristic-function)]
     [base-set #(characteristic-relation %2 %1)]))
 
-(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "Uno"} {:game-name "skat"})) ;; false
-(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "skat"} {:game-name "Uno"})) ;; true
-(println "Pareto Optima: " (get-pareto-optima (get-dual-poset (first adj-poset) (second adj-poset)))) ; fair, bc no "worst" card
+;(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "Uno"} {:game-name "skat"})) ;; false
+;(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "skat"} {:game-name "Uno"})) ;; true
+;(println "Pareto Optima: " (get-pareto-optima (get-dual-poset (first adj-poset) (second adj-poset)))) ; fair, bc no "worst" card
 
+;; task 7: Order-tree
+(defn tree?
+  [base-set relation]
+  (let [[base-set dual-order] (get-dual-poset base-set relation)
+        is-no-forest (= 1 (count(get-pareto-optima [base-set dual-order])))
+        one-pred (every? identity (map #(= 1 (count ((second (convert-format [base-set dual-order] :adjacency-list)) %))) (keys base-set)))]
+   (and is-no-forest one-pred)
+  )
+)
 
+(println "Tree? " (tree? (first adj-poset) (second adj-poset))) ;; => true
