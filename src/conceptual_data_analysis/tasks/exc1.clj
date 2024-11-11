@@ -399,7 +399,10 @@
 
 (defn get-pareto-optima
   "Receives a base set and an order relation.
-  Returns the Pareto optima of the order relation."
+  Returns the Pareto optima of the order relation.
+  Returns the best (if smallest is best) cards in the order relation wrt. all attributes together.
+  There might be better cards in one attribute, but not in all attributes.
+  Hence, a strict optimal card wrt. one attribute order relation (!= all attributes) is a Pareto optimum."
   [poset]
   (let [base-set (first poset)
         relation (second poset)
@@ -412,21 +415,32 @@
   )
 
 
-(let [deck (read-map-from-file "resources/week1/deck.edn")
-      order (read-map-from-file "resources/week1/order.edn")
-      compare-by {:game-name        <=
+(def deck (read-map-from-file "resources/week1/deck.edn"))
+(def order (read-map-from-file "resources/week1/order.edn"))
+(def compare-by {:game-name        <=
                   :publication-date <=
                   :min-num-players  <=
                   :max-num-players  <=
                   :min-age          <=
-                  :inception        <=}
-      matrix-poset (convert-format [deck order] :matrix)
-      adj-poset (convert-format [deck order] :adjacency-list)
-      characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
-      set-vectors-poset [deck order]]
+                  :inception        <=})
+(def matrix-poset (convert-format [deck order] :matrix))
+(def adj-poset (convert-format [deck order] :adjacency-list))
+(def characteristic-poset [deck #(compare-cards %1 %2 compare-by)])
+(def set-vectors-poset [deck order])
 (println "adj-relation" (second adj-poset))
 (println "Pareto Optima: " (get-pareto-optima adj-poset)) ;; => #{Uno}
-)
 
+
+
+;; task 6: dual order relation
+
+(defn get-dual-poset
+  [base-set relation]
+  (let [[base-set characteristic-relation] (convert-format [base-set relation] :characteristic-function)]
+    [base-set #(characteristic-relation %2 %1)]))
+
+(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "Uno"} {:game-name "skat"})) ;; false
+(println ((second (get-dual-poset base-set not-trans-matrix)) {:game-name "skat"} {:game-name "Uno"})) ;; true
+(println "Pareto Optima: " (get-pareto-optima (get-dual-poset (first adj-poset) (second adj-poset)))) ; fair, bc no "worst" card
 
 
