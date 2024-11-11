@@ -435,6 +435,9 @@
 ;; task 6: dual order relation
 
 (defn get-dual-poset
+  "Receives a base set and an order relation.
+  Returns the dual order relation of the order relation.
+  The dual order relation is the order relation with reversed order."
   [base-set relation]
   (let [[base-set characteristic-relation] (convert-format [base-set relation] :characteristic-function)]
     [base-set #(characteristic-relation %2 %1)]))
@@ -445,12 +448,21 @@
 
 ;; task 7: Order-tree
 (defn tree?
+  "Receives a base set and an order relation.
+  Returns true if the order relation is a tree.
+  A tree has only one predecessor for each card and one connected component.
+  One connected component: Only one pareto optima of dual order.
+  One predecessor: Each card has only one card as predecessor."
   [base-set relation]
-  (let [[base-set dual-order] (get-dual-poset base-set relation)
-        is-no-forest (= 1 (count(get-pareto-optima [base-set dual-order])))
+  (let [[base-set dual-order] (get-dual-poset base-set relation) ; get dual order-relation
+        is-no-forest (= 1 (count(get-pareto-optima [base-set dual-order]))) ; only one connected component
         one-pred (every? identity (map #(= 1 (count ((second (convert-format [base-set dual-order] :adjacency-list)) %))) (keys base-set)))]
    (and is-no-forest one-pred)
   )
 )
 
-(println "Tree? " (tree? (first adj-poset) (second adj-poset))) ;; => true
+;(println "Tree? " (tree? deck order)) ; original order-relation
+;(println "Tree? " (tree? deck (second (get-dual-poset deck order)))) ; dual order-relation
+
+
+;; task 8: linear extension
