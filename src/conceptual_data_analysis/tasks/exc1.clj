@@ -395,3 +395,38 @@
 ;(println "not-trans-relation (false): " (order-relation? base-set not-trans-matrix)) ;; => false
 
 
+;; task 5: Pareto Optima == maximum of order relation (e.g. no nachfolger), bc an element is better than another if it is better in all aspects
+
+(defn get-pareto-optima
+  "Receives a base set and an order relation.
+  Returns the Pareto optima of the order relation."
+  [poset]
+  (let [base-set (first poset)
+        relation (second poset)
+        adj-order (second (convert-format [base-set relation] :adjacency-list)) ; convert to adjacency-list
+        pareto-optima (into #{} (for [cardA (vals base-set)
+                                      :when (= 1 (count (get adj-order (:game-name cardA))))]
+                        (:game-name cardA)))]
+    pareto-optima
+    )
+  )
+
+
+(let [deck (read-map-from-file "resources/week1/deck.edn")
+      order (read-map-from-file "resources/week1/order.edn")
+      compare-by {:game-name        <=
+                  :publication-date <=
+                  :min-num-players  <=
+                  :max-num-players  <=
+                  :min-age          <=
+                  :inception        <=}
+      matrix-poset (convert-format [deck order] :matrix)
+      adj-poset (convert-format [deck order] :adjacency-list)
+      characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
+      set-vectors-poset [deck order]]
+(println "adj-relation" (second adj-poset))
+(println "Pareto Optima: " (get-pareto-optima adj-poset)) ;; => #{Uno}
+)
+
+
+
