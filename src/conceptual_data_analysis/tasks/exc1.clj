@@ -456,13 +456,14 @@
   [base-set relation]
   (let [[base-set dual-order] (get-dual-poset base-set relation) ; get dual order-relation
         is-no-forest (= 1 (count(get-pareto-optima [base-set dual-order]))) ; only one connected component
-        one-pred (every? identity (map #(= 1 (count ((second (convert-format [base-set dual-order] :adjacency-list)) %))) (keys base-set)))]
+        ;; reflexive and one predecessor -> 2 predecessor in adjacency-list
+        one-pred (every? identity (map #(= 2 (count ((second (convert-format [base-set dual-order] :adjacency-list)) %))) (keys base-set)))]
    (and is-no-forest one-pred)
   )
 )
 
-;(println "Tree? " (tree? deck order)) ; original order-relation
-;(println "Tree? " (tree? deck (second (get-dual-poset deck order)))) ; dual order-relation
+(println "Tree? " (tree? deck order)) ; original order-relation
+(println "Tree? " (tree? deck (second (get-dual-poset deck order)))) ; dual order-relation
 
 
 ;; task 8: linear extension
