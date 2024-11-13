@@ -1,5 +1,6 @@
 (ns conceptual-data-analysis.tasks.exc1
-  (:require [conceptual-data-analysis.io.csv-files :as csv-files]
+  (:require [clojure.set :as set]
+            [conceptual-data-analysis.io.csv-files :as csv-files]
             [clojure.string :as str]
             [clojure.edn :as edn]
             ))
@@ -84,6 +85,7 @@
 (defn compare-nil
   " Compares two values. If one of the values is nil, the result is true. "
   [compare-by valA valB key]
+  ;(println valA valB)
   (if (some true? [(nil? valA) (nil? valB)])
     true                                                   ; if one of the values is nil, return true
     (compare-no-nil key compare-by valA valB)))             ; else compare the values
@@ -156,7 +158,7 @@
     ;(println cardB)
     ;(println compare-by)
     ;(println (compare-cards cardA cardB compare-by))
-    (write-map-to-file order "resources/week1/order.edn")
+    ;(write-map-to-file order "resources/week1/order.edn")
     ;(write-map-to-file deck "resources/week1/deck.edn")
     ;(println "order" order)
     ;(println (read-map-from-file "resources/week1/order.edn"))
@@ -197,6 +199,15 @@
   convert-format-from-characteristic                        ; O(N^2), bc of for-loop two times over the base-set
   :adjacency-list
   [poset format]
+  ;(println "poset" ((second poset) (first (vals (first poset))) (first (vals (first poset)))))
+  ;(println (convert-format-from-characteristic poset :set-vectors))
+  ;(println "Element: " (first (vals (first poset))))
+  ;(println "Vektor" (for [cardB (vals (first poset))
+  ;                               :when ((second poset) (first (vals (first poset))) (first (vals (first poset))) )]
+  ;    (:game-name cardB)))
+  ;(println "Test123" (into #{} (for [cardB (vals (first poset))
+  ;                               :when ((second poset) (first (vals (first poset)))  (second (vals (first poset))) )]
+  ;    (:game-name cardB))))
   [(first poset)
    (into {} (for [cardA (vals (first poset))]                                    ; key
     [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
@@ -241,9 +252,9 @@
   First, the characteristic function is determined.
   Then, the format is converted to the desired format."
   [poset format]
-  ;(println (type (second poset)))
+  ;(println "base-set" (first poset))
   (let [poset-characteristic (convert-format-to-characteristic poset)] ; O(N^2)
-    ;(println "res order" (second poset-characteristic))
+    ;(println "res order" ((second poset-characteristic) (first (vals (first poset))) (second (vals (first poset)))))
   (convert-format-from-characteristic poset-characteristic format) ; O(N^2)
   ))
 
@@ -404,12 +415,15 @@
   There might be better cards in one attribute, but not in all attributes.
   Hence, a strict optimal card wrt. one attribute order relation (!= all attributes) is a Pareto optimum."
   [poset]
+  ;(println "base-set222" (first poset))
+  ;(println "INIT" (second (convert-format poset :adjacency-list)))
   (let [base-set (first poset)
         relation (second poset)
         adj-order (second (convert-format [base-set relation] :adjacency-list)) ; convert to adjacency-list
         pareto-optima (into #{} (for [cardA (vals base-set)
                                       :when (= 1 (count (get adj-order (:game-name cardA))))]
                         (:game-name cardA)))]
+    ;(println "adj-order from relation" adj-order)
     pareto-optima
     )
   )
@@ -428,7 +442,7 @@
 (def characteristic-poset [deck #(compare-cards %1 %2 compare-by)])
 (def set-vectors-poset [deck order])
 ;(println "adj-relation" (second adj-poset))
-;(println "Pareto Optima: " (get-pareto-optima adj-poset)) ;; => #{Uno}
+;(println "Pareto Optima: " (get-pareto-optima adj-poset))
 
 
 
@@ -462,8 +476,107 @@
   )
 )
 
-(println "Tree? " (tree? deck order)) ; original order-relation
-(println "Tree? " (tree? deck (second (get-dual-poset deck order)))) ; dual order-relation
+;(println "Tree? " (tree? deck order)) ; original order-relation
+;(println "Tree? " (tree? deck (second (get-dual-poset deck order)))) ; dual order-relation
+;(println (count (get-pareto-optima [{} order])))
 
 
 ;; task 8: linear extension
+(defn get-linear-extension
+  [base-set relation]
+  (let [dual-order (second (convert-format (get-dual-poset base-set relation) :adjacency-list))
+        order (second (convert-format [base-set relation] :adjacency-list))]
+
+    (loop [le-order []
+           dual-order dual-order
+           non-zero-base-set base-set]
+      (if (empty? non-zero-base-set)
+        [base-set (into #{} (map #(into [] (vec %)) (partition 2 1 le-order)))] ; set of vectors
+        (let [min-indegree (apply min (map #(count (get dual-order %)) (keys non-zero-base-set)))
+              zero-indegree-nodes (filter #(= min-indegree (count (get dual-order %))) (keys non-zero-base-set))
+              new-base-set (apply dissoc non-zero-base-set zero-indegree-nodes)
+              ]
+          (recur (concat le-order (shuffle zero-indegree-nodes))
+                 (apply dissoc dual-order zero-indegree-nodes)
+                 new-base-set))))
+      )
+    )
+
+(defn get-intersection
+  [posets]
+  (let [base-set (first (first posets))
+        adj-relations (map #(second (convert-format % :set-vectors)) posets)
+        intersection (reduce (fn [acc x] (set/intersection acc x)) (first adj-relations) (rest adj-relations))
+        ]
+    [base-set intersection])
+  )
+
+;; task 9
+(defn get-difference
+  [poset1 poset2]
+  (let [base-set (first poset1)
+        set-vec-relation1 (second (convert-format poset1 :set-vectors) )
+        set-vec-relation2 (second (convert-format poset2 :set-vectors) )
+        difference (set/difference set-vec-relation1 set-vec-relation2)
+        ]
+    [base-set difference])
+  )
+
+;; task 9 : experiment
+(defn experiment
+  [poset]
+  (let [[base-set order-relation] poset
+   ]
+
+    (loop [linear-extensions [(get-linear-extension base-set order-relation)]
+           differences []
+           ]
+      (let [realizer (get-intersection linear-extensions) ; vector of posets
+            dif (second (get-difference realizer poset))]
+        ;(println "difference" (count dif) (count linear-extensions) dif)
+        (if (empty? dif)
+          (do
+            (spit "resources/week1/linear-extensions.txt" (str linear-extensions "\n") :append false)
+            (spit "resources/week1/differences.txt" (str differences "\n") :append true)
+            (count linear-extensions))
+          (recur (conj linear-extensions (get-linear-extension base-set order-relation))
+                 (conj differences (count dif))
+                 )
+          )
+
+        )
+
+      )))
+
+
+(println "\n ------------------Task 8-----------------")
+;(println (second (convert-format (get-dual-poset (first adj-poset) (second adj-poset)) :adjacency-list)))
+(let [dual (second (convert-format (get-dual-poset (first adj-poset) (second adj-poset)) :adjacency-list))
+      lin-ex1  (get-linear-extension (first adj-poset) (second adj-poset) )
+      lin-ex2  (get-linear-extension (first adj-poset) (second adj-poset) )
+      lin-ex3 (get-linear-extension (first adj-poset) (second adj-poset) )
+      intersection-lin-ex (second (get-intersection [lin-ex1 lin-ex2 lin-ex3]))
+      diff-lin-1-2 (get-difference lin-ex1 lin-ex2)]
+  ;(println "BASE" (first lin-ex1))
+  ;(println "result 1" (second lin-ex1))
+  ;(println (count (second lin-ex1)))
+  ;(println "result 2" (second lin-ex2))
+  ;(println (count (second lin-ex2)))
+  ;(println "result 3" (second lin-ex3))
+  ;(println (count (second lin-ex3)))
+  ;(println "intersection-lin-ex" intersection-lin-ex)
+  ;(println (count intersection-lin-ex)
+  ;
+  ;(println "\n ------------------Task 9-----------------")
+  ;(println "difference1" diff-lin-1-2)
+  ;(println "difference" (second diff-lin-1-2) )
+  ;(println "num elements in difference" (count (second diff-lin-1-2)))
+
+  (println "\n ------------------Task 9: Experiment-----------------")
+  (let [difference-counts (vec (repeatedly 10 #(experiment adj-poset)))]
+    (println difference-counts)
+    (println "Experiment" (/ (float (apply + difference-counts)) (count difference-counts))))
+
+  )
+
+
