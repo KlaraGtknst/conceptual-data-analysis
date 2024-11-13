@@ -493,11 +493,11 @@
       (if (empty? non-zero-base-set)
         [base-set (into #{} (map #(into [] (vec %)) (partition 2 1 le-order)))] ; set of vectors
         (let [min-indegree (apply min (map #(count (get dual-order %)) (keys non-zero-base-set)))
-              zero-indegree-nodes (filter #(= min-indegree (count (get dual-order %))) (keys non-zero-base-set))
-              new-base-set (apply dissoc non-zero-base-set zero-indegree-nodes)
+              zero-indegree-node (first (shuffle (filter #(= min-indegree (count (get dual-order %))) (keys non-zero-base-set))))
+              new-base-set (dissoc non-zero-base-set zero-indegree-node)
               ]
-          (recur (concat le-order (shuffle zero-indegree-nodes))
-                 (apply dissoc dual-order zero-indegree-nodes)
+          (recur (conj le-order zero-indegree-node)
+                 (apply dissoc dual-order zero-indegree-node)
                  new-base-set))))
       )
     )
@@ -527,7 +527,6 @@
   [poset]
   (let [[base-set order-relation] poset
    ]
-
     (loop [linear-extensions [(get-linear-extension base-set order-relation)]
            differences []
            ]
@@ -573,6 +572,7 @@
   ;(println "num elements in difference" (count (second diff-lin-1-2)))
 
   (println "\n ------------------Task 9: Experiment-----------------")
+  ;(println (count (second set-vectors-poset)))
   (let [difference-counts (vec (repeatedly 10 #(experiment adj-poset)))]
     (println difference-counts)
     (println "Experiment" (/ (float (apply + difference-counts)) (count difference-counts))))
