@@ -30,32 +30,19 @@
   ; %1 is resulting hash-map, %2 is a hash-map from the vector
   )
 
-;; example
+;; test
 ;; cards as dict
-#_(let [file-path "resources/week1/card_games.csv"]
-    (println (csv-to-map file-path)))
+(println "--------------------Task 1----------------")
+(let [file-path "resources/week1/card_games.csv"]
+    ;; whole deck as dict
+    (println "entries of base-set for Best Act" ((get-deck-as-dict file-path) "Best Act"))
+    (println "base-set" (get-deck-as-dict file-path))
+)
 
-;; whole deck as dict
-;(println ((get-deck-as-dict "resources/week1/card_games.csv") "Best Act"))
-;(println (get-deck-as-dict "resources/week1/card_games.csv"))
+
 
 
 ;; task 2
-
-(defn handle-date
-  "Receives a (shallow) mapping which represents a card. If :inception or :publication-date are present, converts
-  the last 4 characters to an integer year."
-  [card]
-  (let [new-card (-> card
-                     (cond-> (:inception card)
-                             (assoc :inception (Integer/parseInt (subs (:inception card) (- (count (:inception card)) 4)))))
-                     (cond-> (:publication-date card)
-                             (assoc :publication-date (Integer/parseInt (subs (:publication-date card) (- (count (:publication-date card)) 4))))))]
-    (into {} [new-card])
-    ;new-card
-    ))
-
-
 (defmulti compare-no-nil
           "Called if values are not nil.
           Dispatches on the key.
@@ -94,13 +81,10 @@
   "Compares two cards by comparing each of their values wrt. the values of the keys defined in compare-by.
   Returns true if ALL the cards' values are in relation."
   [cardA cardB compare-by]
-  ;(let [new-cardA (second (first (handle-date cardA)))                ; handle-date: year == last 4 characters
-  ;      new-cardB (second (first  (handle-date cardB)))]               ; cardA/cardB are map whose sole value is a map -> vals: get inner map
-
     (every? identity (map (fn [[attribute comp-fn]]               ; deconstruction: key (attribute) & value extracted from element of compare-by
                             (compare-nil comp-fn (attribute cardA) (attribute cardB) attribute)) ; compare-nil: compare values of the cards
                           compare-by)))
-; )
+
 
 (defn get-order-relation
   "Returns the order relation of the cards defined by their keys (game-name).
@@ -131,39 +115,24 @@
 
 
 ;; examples
-;(println (compare-cards {:a 1 :b 2} {:a 1 :b 2}))           ; true
-;(println (compare-cards {:a 1 :b 2} {:a 1 :b 3}))           ; true
-;(println (compare-cards {:a 1 :b 3} {:a 1 :b 2}))           ; false
-;(println (compare-cards {:a 1 :b " hello " :c " 2016 "} {:a 1 :b " hell " :c " 2017 "})) ; false
-#_(let [s (:inception {:a 1 :b " hello " :c " 2016 " :inception " 08.2017 " (keyword " publication date ") " 02.03.2019 "})]
-    (println (Integer/parseInt (subs s (- (count s) 4)))))
-
-;; test handle-date
-;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date "05.08.1993"}}))))
-;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception nil :publication-date "05.08.1993"}}))))
-;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception "05.08.1993" :publication-date nil}}))))
-;(println (handle-date (into {} (vals {(keyword "Uno") {:a 1 :b "hello" :c "2016" :inception nil :publication-date nil}}))))
-
-(let [deck (get-deck-as-dict "resources/week1/card_games.csv")
-        cardA (first deck)
-        cardB (second deck)
-        compare-by {:game-name        <=
+(println "--------------------Task 2----------------")
+(def deck (get-deck-as-dict "resources/week1/card_games.csv"))
+(def cardA (first deck))
+(def cardB (second deck))
+(def compare-by {:game-name        <=
                     :publication-date <=
                     :min-num-players  <=
                     :max-num-players  <=
                     :min-age          <=
-                    :inception        <=}
-        order (get-order-relation compare-by deck)]
-    ;(println cardA)
-    ;(println cardB)
-    ;(println compare-by)
-    ;(println (compare-cards cardA cardB compare-by))
-    ;(write-map-to-file order "resources/week1/order.edn")
-    ;(write-map-to-file deck "resources/week1/deck.edn")
-    ;(println "order" order)
-    ;(println (read-map-from-file "resources/week1/order.edn"))
-    ;(println (read-map-from-file "resources/week1/deck.edn"))
-    )
+                    :inception        <=})
+(def order (get-order-relation compare-by deck))
+;(println "cardA" cardA)
+;(println "cardB" cardB)
+;(println "compare" compare-by)
+;(println "order" order)
+;(println "order" (read-map-from-file "resources/week1/order.edn"))
+;(println "deck" (read-map-from-file "resources/week1/deck.edn"))
+
 
 ;; task 3
 (defmulti
@@ -199,23 +168,12 @@
   convert-format-from-characteristic                        ; O(N^2), bc of for-loop two times over the base-set
   :adjacency-list
   [poset format]
-  ;(println "poset" ((second poset) (first (vals (first poset))) (first (vals (first poset)))))
-  ;(println (convert-format-from-characteristic poset :set-vectors))
-  ;(println "Element: " (first (vals (first poset))))
-  ;(println "Vektor" (for [cardB (vals (first poset))
-  ;                               :when ((second poset) (first (vals (first poset))) (first (vals (first poset))) )]
-  ;    (:game-name cardB)))
-  ;(println "Test123" (into #{} (for [cardB (vals (first poset))
-  ;                               :when ((second poset) (first (vals (first poset)))  (second (vals (first poset))) )]
-  ;    (:game-name cardB))))
   [(first poset)
    (into {} (for [cardA (vals (first poset))]                                    ; key
-    [(:game-name cardA) (into #{} (for [cardB (vals (first poset))
-                                 :when ((second poset) cardA cardB )]
-      (:game-name cardB)))])
-        )
-   ]
-        )
+    [(:game-name cardA)
+     (into #{} (for [cardB (vals (first poset)) :when ((second poset) cardA cardB )] (:game-name cardB)))]))
+    ]
+  )
 
 (defmethod
   convert-format-from-characteristic                        ; O(1), returns the characteristic function
@@ -252,9 +210,7 @@
   First, the characteristic function is determined.
   Then, the format is converted to the desired format."
   [poset format]
-  ;(println "base-set" (first poset))
   (let [poset-characteristic (convert-format-to-characteristic poset)] ; O(N^2)
-    ;(println "res order" ((second poset-characteristic) (first (vals (first poset))) (second (vals (first poset)))))
   (convert-format-from-characteristic poset-characteristic format) ; O(N^2)
   ))
 
@@ -272,53 +228,32 @@
     (vals m)))
 
 ;; test task 3
-(let [deck (read-map-from-file "resources/week1/deck.edn")
-      order (read-map-from-file "resources/week1/order.edn")
-      compare-by {:game-name        <=
-                  :publication-date <=
-                  :min-num-players  <=
-                  :max-num-players  <=
-                  :min-age          <=
-                  :inception        <=}
-      matrix-poset (convert-format [deck order] :matrix)
-      adj-poset (convert-format [deck order] :adjacency-list)
-      characteristic-poset [deck #(compare-cards %1 %2 compare-by)]
-      set-vectors-poset [deck order]]
+(println "--------------------Task 3----------------")
+(def matrix-poset (convert-format [deck order] :matrix))
+(def adj-poset (convert-format [deck order] :adjacency-list))
+(def characteristic-poset [deck #(compare-cards %1 %2 compare-by)])
+(def set-vectors-poset [deck order])
 
-  ;(println "matr" (second matrix-poset))
-    ;(println "adj" (second adj-poset))
-  ;; matr -> charac
-  ;(println "111" (second (convert-format matrix-poset :characteristic-function)))
-  ;(println "RESULT" (first (vals deck)) (second (vals deck)))
-  ;(println ((second (convert-format matrix-poset :characteristic-function)) (second (vals deck)) (first (vals deck))))
+(println "matr" (second matrix-poset))
+(println "adj" (second adj-poset))
 
-  ;; adj -> charac
-  ;(println (convert-format adj-poset :characteristic-function))
-  ;(println ((second (convert-format adj-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
+; charac -> charc
+(println (convert-format characteristic-poset :characteristic-function))
+(println "Char" ((second (convert-format characteristic-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
 
-  ;; set-vectors -> charac
-  ;(println (= clojure.lang.PersistentHashSet (type (second set-vectors-poset))))
-  ;(println (second (convert-format set-vectors-poset :characteristic-function)))
-  ;(println "set-vec -> char" ((second (convert-format set-vectors-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
+; matr -> matr
+(println "matr" (second (convert-format matrix-poset :matrix)))
+(println "Matr " (((second (convert-format matrix-poset :matrix)) (first (keys deck))) (second (keys deck))))
 
-  ;; charac -> charc
-  ;(println (convert-format characteristic-poset :characteristic-function))
-  ;(println "Char" ((second (convert-format characteristic-poset :characteristic-function)) (first (vals deck)) (second (vals deck))))
+; set-vectors -> set-vectors
+(println (second set-vectors-poset))
+(println (second (convert-format set-vectors-poset :set-vectors)))
+(println "set-vec " (.contains (second (convert-format set-vectors-poset :set-vectors)) [(first (keys deck)) (second (keys deck))]))
 
+; adj -> adj
+(println "adj" (second (convert-format adj-poset :adjacency-list)))
+(println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
 
-  ;; matr -> matr
-    ;(println "matr" (second (convert-format matrix-poset :matrix)))
-  ;(println "Matr " (((second (convert-format matrix-poset :matrix)) (first (keys deck))) (second (keys deck))))
-
-  ;; set-vectors -> set-vectors
-  ;(println (second set-vectors-poset))
-    ;(println (second (convert-format set-vectors-poset :set-vectors)))
-    ;(println "set-vec " (.contains (second (convert-format set-vectors-poset :set-vectors)) [(first (keys deck)) (second (keys deck))]))
-
-  ;; adj -> adj
-  ;(println "adj" (second (convert-format adj-poset :adjacency-list)))
-  ;(println "Adj " (.contains (get (second (convert-format adj-poset :adjacency-list)) (:game-name (first (vals deck)))) (:game-name (second (vals deck)))))
-  )
 
 
 
@@ -488,7 +423,7 @@
         order (second (convert-format [base-set relation] :adjacency-list))]
 
     (loop [le-order []
-           dual-order dual-order
+           dual-order order
            non-zero-base-set base-set]
       (if (empty? non-zero-base-set)
         [base-set (into #{} (map #(into [] (vec %)) (partition 2 1 le-order)))] ; set of vectors
@@ -496,8 +431,10 @@
               zero-indegree-node (first (shuffle (filter #(= min-indegree (count (get dual-order %))) (keys non-zero-base-set))))
               new-base-set (dissoc non-zero-base-set zero-indegree-node)
               ]
+          ;(println (count dual-order))
+          ;(println "max " zero-indegree-node)
           (recur (conj le-order zero-indegree-node)
-                 (apply dissoc dual-order zero-indegree-node)
+                 (dissoc dual-order zero-indegree-node)
                  new-base-set))))
       )
     )
@@ -532,7 +469,7 @@
            ]
       (let [realizer (get-intersection linear-extensions) ; vector of posets
             dif (second (get-difference realizer poset))]
-        ;(println "difference" (count dif) (count linear-extensions) dif)
+        (println "difference" (count dif) (count linear-extensions) dif)
         (if (empty? dif)
           (do
             (spit "resources/week1/linear-extensions.txt" (str linear-extensions "\n") :append false)
@@ -573,7 +510,7 @@
 
   (println "\n ------------------Task 9: Experiment-----------------")
   ;(println (count (second set-vectors-poset)))
-  (let [difference-counts (vec (repeatedly 10 #(experiment adj-poset)))]
+  (let [difference-counts (vec (repeatedly 2 #(experiment adj-poset)))]
     (println difference-counts)
     (println "Experiment" (/ (float (apply + difference-counts)) (count difference-counts))))
 
